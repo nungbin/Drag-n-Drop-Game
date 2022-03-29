@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2022 by aborjinik (http://jsbin.com/kuboxaj/2/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<title>SAPUI5 Drag and Drop Game</title>
+<script id="sap-ui-bootstrap" 
+	src="https://openui5nightly.hana.ondemand.com/resources/sap-ui-core.js"
+	data-sap-ui-theme="sap_belize"
+	data-sap-ui-libs="sap.m"></script>
+<script src="https://cdn.rawgit.com/Bernardo-Castilho/dragdroptouch/master/DragDropTouch.js"></script>
+<style>
+.myBoard {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	grid-gap: 2vmin;
+	height: calc(100vmin - 3rem);
+	width: 100vmin;
+	margin: 0 auto;
+	padding: 3vmin;
+	box-sizing: border-box;
+}
+
+.mySquare {
+	border: 1px solid green;
+	font-size: 22vmin;
+	text-align: center;
+}
+
+.mySquare:not(.mySquareDraggable) {
+	cursor: not-allowed;
+    border-color: gray;
+}
+
+.mySquare.mySquareDroppable {
+	border-color: red;
+    border-style: dashed;
+}
+
+@keyframes blink {
+	to { color: red; }
+}
+
+.myBoardSuccess {
+	color: green;
+	animation: blink 1s ease-in-out infinite;
+}
+
+/* IE11 grid workarounds */
+.myBoard { display: -ms-grid; -ms-grid-columns: 1fr 1rem 1fr 1rem 1fr; -ms-grid-rows: 1fr 1rem 1fr 1rem 1fr;}
+.mySquare:nth-child(2) { -ms-grid-column: 3; }
+.mySquare:nth-child(3) { -ms-grid-column: 5; }
+.mySquare:nth-child(4) { -ms-grid-row: 3; }
+.mySquare:nth-child(5) { -ms-grid-row: 3; -ms-grid-column: 3; }
+.mySquare:nth-child(6) { -ms-grid-row: 3; -ms-grid-column: 5; }
+.mySquare:nth-child(7) { -ms-grid-row: 5; }
+.mySquare:nth-child(8) { -ms-grid-row: 5; -ms-grid-column: 3; }
+.mySquare:nth-child(9) { -ms-grid-row: 5; -ms-grid-column: 5; }
+
+</style>
+
+<script>
+var aGameData = [
+	{value: "1", random: Math.random()},
+	{value: "2", random: Math.random()},
+	{value: "3", random: Math.random()},
+	{value: "4", random: Math.random()},
+	{value: "5", random: Math.random()},
+	{value: "6", random: Math.random()},
+	{value: "7", random: Math.random()},
+	{value: "9", random: Math.random()},
+	{value: "8", random: Math.random()}
+];
+
+var Board = sap.ui.core.Control.extend("my.Board", {
+	metadata: {
+		aggregations: {
+			squares: { type: "my.Square", singularName: "square", bindable: "bindable", multiple: true, dnd: true }
+		}
+	},
+	renderer: function(rm, oControl) {
+		rm.write("<div");
+		rm.writeControlData(oControl);
+		rm.addClass("myBoard");
+		rm.writeClasses();
+		rm.write(">");
+		oControl.getSquares().forEach(function(oSquare) {
+			rm.renderControl(oSquare);
+		});
+		rm.write("</div>");
+	},
+	ondrop: function() {
+		this.dropCount = this.dropCount || 0;
+		this.dropCount++;
+	},
+	update: function() {
+		var aSquares = this.getSquares();
+		var bSuccess = aSquares.filter(function (oSquare, iIndex) {
+			oSquare.setDraggable(false).setDroppable(false);
+			return oSquare.getValue() == iIndex + 1;
+		}).length == aSquares.length;
+
+		if (bSuccess) {
+			oBoard.addStyleClass("myBoardSuccess");
+			sap.ui.require(["sap/m/MessageBox"], function(MessageBox) {
+                MessageBox.success("Well done! " + this.dropCount + " drops");
+            }.bind(this));
+			return;
+		}
+
+		var iDropIndex = 0, oDropSquare = aSquares[iDropIndex];
+		var aDraggables = [[1, 3], [0, 2, 4], [1, 5], [0, 4, 6], [1, 3, 5, 7], [2, 4, 8], [3, 7], [4, 6, 8], [5, 7]];
+		
+		while (oDropSquare.getValue() != aSquares.length) {
+			oDropSquare = aSquares[++iDropIndex];
+		}
+
+		oDropSquare.setDroppable(true);
+		aDraggables[iDropIndex].forEach(function(iDragIndex) {
+			aSquares[iDragIndex].setDraggable(true);
+		});
+	}
+});
+
+var Square = sap.ui.core.Control.extend("my.Square", {
+	metadata: {
+		properties: {
+			value: { type: "string", defaultValue: "" },
+			draggable: { type: "boolean", defaultValue: false },
+			droppable: { type: "boolean", defaultValue: false }
+		}
+	},
+	renderer: function(rm, oControl) {
+		rm.write("<div");
+		rm.writeControlData(oControl);
+		rm.addClass("mySquare");
+		if (oControl.getDroppable()) {
+			rm.addClass("mySquareDroppable");
+		} 
+		if (oControl.getDraggable()) {
+			rm.addClass("mySquareDraggable");
+		}
+		rm.writeClasses();
+		rm.write(">")
+		if (!oControl.getDroppable()) {
+			rm.write(oControl.getValue());
+		}
+		rm.write("</div>");
+	}
+});
+
+var oBoard = new Board({
+	dragDropConfig: new sap.ui.core.dnd.DragDropInfo({
+		sourceAggregation: "squares",
+		targetAggregation: "squares",
+		dragStart: function(oEvent) {
+			if (!oEvent.getParameter("target").getDraggable()) {
+				oEvent.preventDefault();
+			}
+		},
+		dragEnter: function(oEvent) {
+			if (!oEvent.getParameter("target").getDroppable()) {
+				oEvent.preventDefault();
+			}
+		},
+		drop: function(oEvent) {
+			var oDraggable = oEvent.getParameter("draggedControl");
+			var oDroppable = oEvent.getParameter("droppedControl");
+			oDroppable.setValue(oDraggable.getValue());
+			oDraggable.setValue(oBoard.getSquares().length);
+			oBoard.update();
+		}
+	})
+});
+
+var oModel = new sap.ui.model.json.JSONModel();
+oModel.setData(aGameData);
+oBoard.setModel(oModel);
+oBoard.bindSquares({
+	path: "/",
+	//sorter: new sap.ui.model.Sorter("random"),
+	template: new Square({
+		value: "{value}"
+	})
+}).update();
+
+var oPage = new sap.m.Page({
+	title: "Can you order the numbers?",
+	content: [oBoard]
+});
+
+var oApp = new sap.m.App({
+	pages: [oPage]
+}).placeAt("content");
+
+</script>
+</head>
+<body class="sapUiBody" id="content">
+</body>
+</html>
