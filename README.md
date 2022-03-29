@@ -5,4 +5,4 @@ Slide: https://www.slideshare.net/aborjinik/2018-ui5con-draganddrop-concept </br
 Blog: https://blogs.sap.com/2018/07/19/drag-and-drop-is-now-enabled-for-all-ui5-controls/ </br>
 Demo: https://jsbin.com/kuboxaj/edit?html,output </br>
 
-To run this locally, install Live Server and run live-server to kick start it.
+To run this locally, install Live Server and run <code>live-server</code> to kick start it.
