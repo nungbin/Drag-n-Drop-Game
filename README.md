@@ -1,4 +1,4 @@
-# Drag-n-Drop-Game
+# SAPUI5 Drag-n-Drop Game
 SAPUI5 Drag and Drop Game by Cahit Guerguec
 
 Slide: https://www.slideshare.net/aborjinik/2018-ui5con-draganddrop-concept </br>
